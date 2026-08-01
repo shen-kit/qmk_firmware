@@ -12,3 +12,5 @@
 #define PERMISSIVE_HOLD
 #define CHODRAL_HOLD
 #define FLOW_TAP_TERM 150
+
+#define COMBO_TERM 30
