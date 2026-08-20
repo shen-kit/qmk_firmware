@@ -8,36 +8,17 @@
 
 const uint16_t PROGMEM df_lparen[] = {LGUI_T(KC_D), LSFT_T(KC_F), COMBO_END};
 const uint16_t PROGMEM jk_rparen[] = {RSFT_T(KC_J), RGUI_T(KC_K), COMBO_END};
-const uint16_t PROGMEM er_lbrace[] = {LSG_T(KC_E), KC_R, COMBO_END};
-const uint16_t PROGMEM ui_rbrace[] = {KC_U, KC_I, COMBO_END};
 const uint16_t PROGMEM cv_lsqr[] = {KC_C, KC_V, COMBO_END};
 const uint16_t PROGMEM mcomm_rsqr[] = {KC_M, KC_COMM, COMBO_END};
 const uint16_t PROGMEM kl_equals[] = {RGUI_T(KC_K), RCTL_T(KC_L), COMBO_END};
 combo_t key_combos[] = {
     COMBO(df_lparen, KC_LPRN),
     COMBO(jk_rparen, KC_RPRN),
-    COMBO(er_lbrace, KC_LCBR),
-    COMBO(ui_rbrace, KC_RCBR),
     COMBO(cv_lsqr, KC_LBRC),
     COMBO(mcomm_rsqr, KC_RBRC),
 
     COMBO(kl_equals, KC_PEQL),
 };
-
-enum custom_keycodes {
-    K_EMAIL = SAFE_RANGE
-};
-bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    switch (keycode) {
-        case K_EMAIL:
-            if (record->event.pressed) {
-                SEND_STRING("shenkit108@gmail.com");
-            }
-            return false;
-        default:
-            return true;
-    }
-}
 
 enum layers {
     BASE,
@@ -49,13 +30,43 @@ enum layers {
     GAME
 };
 
+// ===== custom keycodes =====
+enum custom_keycodes {
+    K_EMAIL = SAFE_RANGE,
+    K_EXT_GAME
+};
+
+static uint16_t layer_timer;
+bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    switch (keycode) {
+        case K_EMAIL:
+            if (record->event.pressed) {
+                SEND_STRING("shenkit108@gmail.com");
+            }
+            return false;
+        case K_EXT_GAME:
+            // tap for GAME layer, hold for EXT layer
+            if (record->event.pressed) {
+                layer_timer = timer_read();
+                layer_on(EXT);
+            } else {
+                layer_off(EXT);
+                if (timer_elapsed(layer_timer) < TAPPING_TERM)
+                    layer_move(GAME);
+            }
+            return false;
+        default:
+            return true;
+    }
+}
+
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     [BASE] = LAYOUT_split_4x6_3(
         // .-----------------------------------------------------------------------------,               ,------------------------------------------------------------------------.
-            LT(EXT, KC_DEL), KC_1,         KC_2,         KC_3,         KC_4,         KC_5,                KC_6, KC_7,         KC_8,         KC_9,         KC_0,            MO(EXT),
+            K_EXT_GAME,      KC_1,         KC_2,         KC_3,         KC_4,         KC_5,                KC_6, KC_7,         KC_8,         KC_9,         KC_0,            MO(EXT),
         // |-----------------------------------------------------------------------------|               |------------------------------------------------------------------------|
-            TO(GAME),        KC_Q,         KC_W,         LSG_T(KC_E),  KC_R,         KC_T,                KC_Y, KC_U,         KC_I,         KC_O,         KC_P,            KC_MINS,
+            KC_DEL,          KC_Q,         KC_W,         LSG_T(KC_E),  KC_R,         KC_T,                KC_Y, KC_U,         KC_I,         KC_O,         KC_P,            KC_MINS,
         // |-----------------------------------------------------------------------------|               |------------------------------------------------------------------------|
             KC_GRV,          LALT_T(KC_A), LCTL_T(KC_S), LGUI_T(KC_D), LSFT_T(KC_F), KC_G,                KC_H, RSFT_T(KC_J), RGUI_T(KC_K), RCTL_T(KC_L), RALT_T(KC_SCLN), KC_QUOT,
         // |-----------------------------------------------------------------------------|               |------------------------------------------------------------------------|
@@ -83,11 +94,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         // .----------------------------------------------------,        ,----------------------------------------------------.
             KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,           KC_F7,   KC_F8,   KC_F9,   KC_F10,  KC_F11,  KC_F12,
         // |----------------------------------------------------|        |----------------------------------------------------|
-            _______, _______, _______, _______, _______, _______,         _______, KC_AMPR, KC_ASTR, KC_LPRN, _______, _______,
+            _______, _______, KC_PLUS, KC_LCBR, KC_RCBR, _______,         _______, KC_AMPR, KC_ASTR, KC_LPRN, _______, _______,
         // |----------------------------------------------------|        |----------------------------------------------------|
-            _______, _______, _______, _______, _______, _______,         KC_PIPE, KC_DLR,  KC_PERC, KC_CIRC, KC_BSLS, _______,
+            _______, _______, KC_ASTR, KC_LPRN, KC_RPRN, _______,         KC_PIPE, KC_DLR,  KC_PERC, KC_CIRC, KC_BSLS, _______,
         // |----------------------------------------------------|        |----------------------------------------------------|
-            _______, _______, _______, _______, _______, _______,         _______, KC_EXLM, KC_AT,   KC_HASH, _______, _______,
+            _______, _______, _______, KC_LBRC, KC_RBRC, _______,         _______, KC_EXLM, KC_AT,   KC_HASH, _______, _______,
         // `----------------------------------------------------+--.  .--+----------------------------------------------------'
                                           _______, _______, _______,   _______, _______, _______
         //                               `-------------------------'  `------------------------'
