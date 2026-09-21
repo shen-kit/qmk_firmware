@@ -9,7 +9,11 @@
 #define TAPPING_TERM 200
 #define QUICK_TAP_TERM 150
 #define PERMISSIVE_HOLD
-// #define CHORDAL_HOLD // leave disabled - this messes with same-hand shortcuts
 #define FLOW_TAP_TERM 100
+// #define CHORDAL_HOLD // leave disabled - this messes with same-hand shortcuts
 
 #define COMBO_TERM 30
+
+// controller settings
+#define JOYSTICK_AXIS_COUNT 2
+#define JOYSTICK_BUTTON_COUNT 16
