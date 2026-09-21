@@ -27,17 +27,48 @@ enum layers {
     NAV,
     MOUSE,
     EXT,
-    GAME
+    CONTROLLER,
+    GAME,
 };
 
 // ===== custom keycodes =====
 enum custom_keycodes {
     K_EMAIL = SAFE_RANGE,
-    K_EXT_GAME
+    K_EXT_GAME,
+    K_EXT_CONTROLLER,
+    CON_UP,
+    CON_DWN,
+    CON_LFT,
+    CON_RHT,
 };
 
 static uint16_t layer_timer;
+static bool dpad_up = false, dpad_down = false, dpad_left = false, dpad_right = false;
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    if (IS_LAYER_ON(CONTROLLER)) {
+        switch (keycode) {
+            case CON_UP:  dpad_up    = record->event.pressed; break;
+            case CON_DWN: dpad_down  = record->event.pressed; break;
+            case CON_LFT: dpad_left  = record->event.pressed; break;
+            case CON_RHT: dpad_right = record->event.pressed; break;
+            default:
+                return true;
+        }
+
+        // Recompute axes from current held state
+        int16_t x = 0;
+        int16_t y = 0;
+        if (dpad_left)  x -= 127;
+        if (dpad_right) x += 127;
+        if (dpad_up)    y -= 127;
+        if (dpad_down)  y += 127;
+
+        joystick_set_axis(0, x);
+        joystick_set_axis(1, y);
+
+        return false;
+    }
+
     switch (keycode) {
         case K_EMAIL:
             if (record->event.pressed) {
@@ -55,16 +86,33 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     layer_move(GAME);
             }
             return false;
+        case K_EXT_CONTROLLER:
+            // tap for GAME layer, hold for CONTROLLER layer
+            if (record->event.pressed) {
+                layer_timer = timer_read();
+                layer_on(EXT);
+            } else {
+                layer_off(EXT);
+                if (timer_elapsed(layer_timer) < TAPPING_TERM)
+                    layer_move(CONTROLLER);
+            }
+            return false;
         default:
             return true;
     }
 }
 
+// Joystick config: X and Y axes are virtual (driven by code, not ADC)
+joystick_config_t joystick_axes[JOYSTICK_AXIS_COUNT] = {
+    JOYSTICK_AXIS_VIRTUAL, // X
+    JOYSTICK_AXIS_VIRTUAL  // Y
+};
+
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     [BASE] = LAYOUT_split_4x6_3(
         // .-----------------------------------------------------------------------------,               ,------------------------------------------------------------------------.
-            K_EXT_GAME,      KC_1,         KC_2,         KC_3,         KC_4,         KC_5,                KC_6, KC_7,         KC_8,         KC_9,         KC_0,            MO(EXT),
+            K_EXT_GAME,      KC_1,         KC_2,         KC_3,         KC_4,         KC_5,                KC_6, KC_7,         KC_8,         KC_9,         KC_0,            K_EXT_CONTROLLER,
         // |-----------------------------------------------------------------------------|               |------------------------------------------------------------------------|
             KC_DEL,          KC_Q,         LCG_T(KC_W),  LSG_T(KC_E),  KC_R,         KC_T,                KC_Y, KC_U,         KC_I,         KC_O,         KC_P,            KC_MINS,
         // |-----------------------------------------------------------------------------|               |------------------------------------------------------------------------|
@@ -147,9 +195,24 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
 
     // hollow knight
+    [CONTROLLER] = LAYOUT_split_4x6_3(
+        // .----------------------------------------------------,        ,----------------------------------------------------.
+            TO(BASE),_______, _______, _______, _______, _______,         _______, _______, _______, _______, _______, TO(BASE),
+        // |----------------------------------------------------|        |----------------------------------------------------|
+            _______ ,_______, _______, CON_UP,  _______, _______,         _______, _______, JS_3,    _______, _______, _______,
+        // |----------------------------------------------------|        |----------------------------------------------------|
+            _______ ,_______, CON_LFT, CON_DWN, CON_RHT, _______,         _______, JS_2,    JS_0,    JS_1,    _______, _______,
+        // |----------------------------------------------------|        |----------------------------------------------------|
+            _______ ,_______, _______, _______, _______, _______,         _______, _______, _______, _______, _______, _______,
+        // `----------------------------------------------------+--.  .--+----------------------------------------------------'
+        //                                 LB       LT      BACK       START     RT        RB
+                                          JS_4,    JS_10,   JS_6,      JS_7,    JS_11,   JS_5
+        //                               `-------------------------'  `-------------------------'
+    ),
+
     [GAME] = LAYOUT_split_4x6_3(
         // .----------------------------------------------------,        ,----------------------------------------------------.
-            TO(BASE),_______, _______, _______, _______, _______,         _______, _______, _______, _______, _______, _______,
+            TO(BASE),_______, _______, _______, _______, _______,         _______, _______, _______, _______, _______, TO(BASE),
         // |----------------------------------------------------|        |----------------------------------------------------|
             _______, _______, KC_Q,    KC_W,    _______, _______,         _______, _______, _______, _______, _______, _______,
         // |----------------------------------------------------|        |----------------------------------------------------|
